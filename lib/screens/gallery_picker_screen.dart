@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:qr_code_tools/qr_code_tools.dart';
 import '../services/api_service.dart';
+import 'package:google_mlkit_barcode_scanning/google_mlkit_barcode_scanning.dart';
 
 class GalleryPickerScreen extends StatefulWidget {
   const GalleryPickerScreen({super.key});
@@ -81,6 +82,35 @@ class _GalleryPickerScreenState extends State<GalleryPickerScreen>
     super.dispose();
   }
 
+  // Future<void> pickImage() async {
+  //   final picked = await picker.pickImage(source: ImageSource.gallery);
+  //   if (picked == null) return;
+
+  //   final imageFile = File(picked.path);
+  //   setState(() {
+  //     selectedImage = imageFile;
+  //     isProcessing = true;
+  //   });
+
+  //   try {
+  //     final qrData = await QrCodeToolsPlugin.decodeFrom(imageFile.path);
+  //     if (qrData != null && qrData.isNotEmpty) {
+  //       await ApiService.uploadQRCode(data: qrData, imageFile: imageFile);
+  //       if (context.mounted) {
+  //         _showSuccessSnackBar("QR code uploaded successfully! 🎉");
+  //       }
+  //     } else {
+  //       if (context.mounted) {
+  //         _showErrorSnackBar("No QR code found in image 😔");
+  //       }
+  //     }
+  //   } catch (e) {
+  //     if (context.mounted) {
+  //       _showErrorSnackBar("Error detecting QR code ⚠️");
+  //     }
+  //   }
+  //   setState(() => isProcessing = false);
+  // }
   Future<void> pickImage() async {
     final picked = await picker.pickImage(source: ImageSource.gallery);
     if (picked == null) return;
@@ -92,7 +122,20 @@ class _GalleryPickerScreenState extends State<GalleryPickerScreen>
     });
 
     try {
-      final qrData = await QrCodeToolsPlugin.decodeFrom(imageFile.path);
+      final inputImage = InputImage.fromFile(imageFile);
+      final barcodeScanner = BarcodeScanner();
+      final barcodes = await barcodeScanner.processImage(inputImage);
+
+      String? qrData;
+
+      for (final barcode in barcodes) {
+        if (barcode.rawValue != null &&
+            barcode.format == BarcodeFormat.qrCode) {
+          qrData = barcode.rawValue;
+          break;
+        }
+      }
+
       if (qrData != null && qrData.isNotEmpty) {
         await ApiService.uploadQRCode(data: qrData, imageFile: imageFile);
         if (context.mounted) {
@@ -108,6 +151,7 @@ class _GalleryPickerScreenState extends State<GalleryPickerScreen>
         _showErrorSnackBar("Error detecting QR code ⚠️");
       }
     }
+
     setState(() => isProcessing = false);
   }
 

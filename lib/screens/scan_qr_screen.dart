@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:qr_code_tools/qr_code_tools.dart';
 import '../services/api_service.dart';
+import 'package:google_mlkit_barcode_scanning/google_mlkit_barcode_scanning.dart';
 
 class ImagePickerQRScreen extends StatefulWidget {
   const ImagePickerQRScreen({super.key});
@@ -97,6 +98,44 @@ class _ImagePickerQRScreenState extends State<ImagePickerQRScreen>
     super.dispose();
   }
 
+  // Future<void> captureImage() async {
+  //   setState(() => isScanning = true);
+  //   _scanController.repeat();
+
+  //   final picked = await picker.pickImage(source: ImageSource.camera);
+  //   if (picked == null) {
+  //     setState(() => isScanning = false);
+  //     _scanController.stop();
+  //     return;
+  //   }
+
+  //   final imageFile = File(picked.path);
+  //   setState(() {
+  //     capturedImage = imageFile;
+  //     isScanning = false;
+  //     isProcessing = true;
+  //   });
+  //   _scanController.stop();
+
+  //   try {
+  //     final qrData = await QrCodeToolsPlugin.decodeFrom(imageFile.path);
+  //     if (qrData != null && qrData.isNotEmpty) {
+  //       await ApiService.uploadQRCode(data: qrData, imageFile: imageFile);
+  //       if (context.mounted) {
+  //         _showSuccessSnackBar("QR code scanned and uploaded! 📸✨");
+  //       }
+  //     } else {
+  //       if (context.mounted) {
+  //         _showErrorSnackBar("No QR code detected in the image 🔍");
+  //       }
+  //     }
+  //   } catch (e) {
+  //     if (context.mounted) {
+  //       _showErrorSnackBar("Error scanning QR code 📱⚠️");
+  //     }
+  //   }
+  //   setState(() => isProcessing = false);
+  // }
   Future<void> captureImage() async {
     setState(() => isScanning = true);
     _scanController.repeat();
@@ -117,7 +156,20 @@ class _ImagePickerQRScreenState extends State<ImagePickerQRScreen>
     _scanController.stop();
 
     try {
-      final qrData = await QrCodeToolsPlugin.decodeFrom(imageFile.path);
+      final inputImage = InputImage.fromFile(imageFile);
+      final barcodeScanner = BarcodeScanner();
+      final barcodes = await barcodeScanner.processImage(inputImage);
+
+      String? qrData;
+
+      for (final barcode in barcodes) {
+        if (barcode.rawValue != null &&
+            barcode.format == BarcodeFormat.qrCode) {
+          qrData = barcode.rawValue;
+          break;
+        }
+      }
+
       if (qrData != null && qrData.isNotEmpty) {
         await ApiService.uploadQRCode(data: qrData, imageFile: imageFile);
         if (context.mounted) {
