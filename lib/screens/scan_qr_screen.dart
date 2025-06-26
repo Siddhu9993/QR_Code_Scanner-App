@@ -1,3 +1,4 @@
+import 'dart:developer';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -140,7 +141,10 @@ class _ImagePickerQRScreenState extends State<ImagePickerQRScreen>
     setState(() => isScanning = true);
     _scanController.repeat();
 
-    final picked = await picker.pickImage(source: ImageSource.camera);
+    final picked = await picker.pickImage(
+      source: ImageSource.camera,
+      imageQuality: 75,
+    );
     if (picked == null) {
       setState(() => isScanning = false);
       _scanController.stop();
@@ -148,6 +152,11 @@ class _ImagePickerQRScreenState extends State<ImagePickerQRScreen>
     }
 
     final imageFile = File(picked.path);
+
+    await Future.delayed(const Duration(milliseconds: 300));
+    log("Siddhesh Uploading Image Path: ${imageFile.path}");
+    log("Siddhesh File exists: ${await imageFile.exists()}");
+
     setState(() {
       capturedImage = imageFile;
       isScanning = false;
